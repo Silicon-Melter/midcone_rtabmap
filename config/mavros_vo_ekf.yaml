@@ -1,0 +1,76 @@
+ekf_filter_node:
+  ros__parameters:
+    frequency: 30.0
+    sensor_timeout: 0.1
+    two_d_mode: false
+    publish_tf: true
+    
+    # Frames
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_link
+    world_frame: odom
+
+    # ------------------------------------------------
+    # SOURCE 1: RGBD CAMERA (The Position Driver)
+    # ------------------------------------------------
+    # We trust this sensor ONLY for X and Y.
+    odom0: /odom_rgbd
+    
+    # Matrix: [X, Y, Z, Roll, Pitch, Yaw, Vx, Vy, Vz, Vroll, Vpitch, Vyaw, Ax, Ay, Az]
+    # TRUE: X(0), Y(1)
+    # FALSE: Everything else. We strip the drifting Yaw and Z.
+    odom0_config: [true, true, false, false, false, false, 
+                   false, false, false, false, false, false,
+                   false, false, false]
+    
+    # Differential: FALSE (We trust the absolute calculation of the Visual Odom)
+    odom0_differential: false
+    
+    # Relative: TRUE (Ensures it starts exactly at 0,0,0)
+    odom0_relative: true
+    
+    odom0_queue_size: 10
+    odom0_n_sigma: 5.0
+
+    # ------------------------------------------------
+    # SOURCE 2: MAVROS (The Altitude & Heading Anchor)
+    # ------------------------------------------------
+    # We trust this sensor ONLY for Z and Orientation.
+    odom1: /odom_hybrid
+    
+    odom1_config: [false, false, true, true, true, true, 
+                   false, false, false, false, false, false,
+                   false, false, false]
+    
+    odom1_differential: false
+    
+    odom1_relative: true
+    
+    odom1_queue_size: 10
+    odom1_n_sigma: 5.0
+
+    # ------------------------------------------------
+    # PROCESS NOISE & SAFETY
+    # ------------------------------------------------
+    # Prevents "0 Covariance" errors if Mavros reports perfect data
+    min_measurement_covariance: [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 
+                                 0.05, 0.05, 0.05, 0.05, 0.05, 0.05,
+                                 0.05, 0.05, 0.05]
+
+    # Standard drone process noise
+    process_noise_covariance: [0.03, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,   0.0,   0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.03, 0.0,  0.0,  0.0,  0.0,  0.0,   0.0,   0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.04, 0.0,  0.0,  0.0,  0.0,   0.0,   0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.02, 0.0,  0.0,  0.0,   0.0,   0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.02, 0.0,  0.0,   0.0,   0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.05, 0.0,   0.0,   0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.02,  0.0,   0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,   0.02,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,   0.0,   0.03, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,   0.0,   0.0,  0.01, 0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,   0.0,   0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,   0.0,   0.0,  0.0,  0.0,  0.02, 0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,   0.0,   0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,   0.0,   0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,   0.0,   0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.015]
