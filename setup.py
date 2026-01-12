@@ -36,12 +36,13 @@ setup(
     entry_points={
         'console_scripts': [
             'px4_converter = midcone_rtabmap.px4_converter:main',
-            'odom_fixer = midcone_rtabmap.odom_fixer:main',
+            'odom_to_tf = midcone_rtabmap.odom_to_tf:main',
             'ghost_tf = midcone_rtabmap.ghost_tf:main',
             'qos_bridge = midcone_rtabmap.qos_bridge:main',
             'lidar_gating_node = midcone_rtabmap.lidar_gating_node:main',
             'hybrid_odom_node = midcone_rtabmap.hybrid_odom_node:main',
             'path_plotter = midcone_rtabmap.path_plotter:main',
+            'restamper = midcone_rtabmap.restamper:main',
         ],
     },
 )

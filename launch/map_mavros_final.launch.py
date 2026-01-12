@@ -21,7 +21,8 @@ def generate_launch_description():
           'subscribe_odom_info': subscribe_odom_info, # <--- NOW DYNAMIC
           'approx_sync': True,
           'wait_imu_to_init': True,
-          'use_sim_time': use_sim_time                # <--- CRITICAL FOR BAGS
+          'use_sim_time': use_sim_time,
+          'database_path': LaunchConfiguration('database_path'),
     }]
 
     # --- 3. DEFINE REMAPPINGS ---
@@ -32,11 +33,16 @@ def generate_launch_description():
           ('depth/image', '/camera/camera/aligned_depth_to_color/image_raw'),
           ('odom', '/mavros/local_position/odom')
     ] 
+    
+    
 
     return LaunchDescription([
 
-        # --- 4. DECLARE ARGUMENTS ---
-        # This allows the launch file to accept these flags
+        DeclareLaunchArgument(
+            'database_path', 
+            default_value='~/.ros/rtabmap.db',
+            description='Where to save the map database'),
+
         DeclareLaunchArgument(
             'use_sim_time', 
             default_value='false',
