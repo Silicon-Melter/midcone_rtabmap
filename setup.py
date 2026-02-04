@@ -37,6 +37,7 @@ setup(
         'console_scripts': [
             'px4_converter = midcone_rtabmap.px4_converter:main',
             'odom_to_tf = midcone_rtabmap.odom_to_tf:main',
+            'odom_to_tf_sim = midcone_rtabmap.odom_to_tf_sim:main',
             'ghost_tf = midcone_rtabmap.ghost_tf:main',
             'qos_bridge = midcone_rtabmap.qos_bridge:main',
             'lidar_gating_node = midcone_rtabmap.lidar_gating_node:main',
