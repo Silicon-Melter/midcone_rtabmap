@@ -1,10 +1,2 @@
-ROS 2 RTAB-Map Automated PipelineAn automated Python utility for processing ROS 2 bag files into 3D maps using RTAB-Map. This script handles the lifecycle of launching the mapping nodes, playing back data with synchronized simulation time, and gracefully saving the resulting .db file.📋 Table of ContentsPrerequisitesDirectory StructureHow It WorksUsageConfiguration🛠 PrerequisitesBefore running the script, ensure you have the following installed:ROS 2 (e.g., Humble, Iron, or Foxy)RTAB-Map ROS 2 packages:Bashsudo apt install ros-$ROS_DISTRO-rtabmap-ros
-The custom launch package: midcone_rtabmap (should be in your colcon workspace).📂 Directory StructureThe script expects a specific folder layout to locate input data and store results:Plaintext.
-├── input_bags/          # Place your recorded ROS 2 bag folders here
-│   └── flight_data_01/  # Example Request ID
-├── output_maps/         # Generated .db files will be saved here
-├── process_map.py       # This automation script
-└── README.md
-⚙️ How It WorksThe script follows a 6-step automation logic:Initialization: Validates the existence of the input bag.Launch: Starts the midcone_rtabmap launch file in a background process with use_sim_time:=true.Playback: Runs ros2 bag play with the --clock flag to ensure RTAB-Map synchronizes correctly with the bag's timestamps.Graceful Shutdown: Sends a SIGINT to the mapping node after playback, allowing RTAB-Map to flush the database to disk.Verification: Checks if the .db file was created and reports the final file size.🚀 UsageRun the script from your terminal by passing the Request ID (the name of the folder inside input_bags/).Bashpython3 process_map.py <your_bag_folder_name>
-Example:If you have a bag at input_bags/flight_test_01, run:Bashpython3 process_map.py flight_test_01
-🔧 ConfigurationYou can modify the following variables directly in process_map.py to match your environment:VariableDescriptionDefaultBAG_DIRSource directory for bags./input_bagsMAP_DIRDestination for maps./output_mapsLAUNCH_PACKAGEYour ROS 2 mapping packagemidcone_rtabmapLAUNCH_FILEThe specific launch file to callmap_mavros_final.launch.py[!TIP]If your CPU is powerful enough, you can increase the --rate argument in the play_cmd list within the script to process maps faster (e.g., "2.0" for 2x speed).
+# To process input_bags/example/
+python3 process_map.py example
