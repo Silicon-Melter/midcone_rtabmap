@@ -1,5 +1,4 @@
 import os
-
 from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.actions import DeclareLaunchArgument
@@ -7,66 +6,100 @@ from launch.substitutions import LaunchConfiguration
 
 def generate_launch_description():
     
-    # --- 1. CAPTURE CONFIGURATION FROM COMMAND LINE ---
-    # These variables hold the values you pass with ":="
+    # --- CONFIGURATION ---
     use_sim_time = LaunchConfiguration('use_sim_time')
     subscribe_odom_info = LaunchConfiguration('subscribe_odom_info')
+    database_path = LaunchConfiguration('database_path')
     args = LaunchConfiguration('args')
 
-    # --- 2. DEFINE PARAMETERS ---
-    # We insert the LaunchConfiguration variables here instead of hardcoded True/False
+    # --- RTAB-MAP PARAMETERS ---
+    # We REMOVE 'rgb_image_transport' because we are feeding it raw data now.
     parameters=[{
           'frame_id': 'base_link', 
           'subscribe_depth': True,
-          'subscribe_odom_info': subscribe_odom_info, # <--- NOW DYNAMIC
+          'subscribe_odom_info': subscribe_odom_info,
           'approx_sync': True,
           'wait_imu_to_init': True,
           'use_sim_time': use_sim_time,
-          'database_path': LaunchConfiguration('database_path'),
+          'database_path': database_path,
+          
+          # Optimization
+          'queue_size': 20,
+          'qos_image': 2,
+          'qos_camera_info': 2,
     }]
 
-    # --- 3. DEFINE REMAPPINGS ---
+    # --- REMAPPINGS for RTAB-Map ---
+    # RTAB-Map listens to the "unzipped" RAW topics created by our nodes below
     remappings=[
           ('imu', '/mavros/imu/data'),
-          ('rgb/image', '/camera/camera/color/image_raw'),
+          ('rgb/image', '/camera/camera/color/image_raw/uncompressed'), # <--- Listening to our local unzip node
           ('rgb/camera_info', '/camera/camera/aligned_depth_to_color/camera_info'), 
-          ('depth/image', '/camera/camera/aligned_depth_to_color/image_raw'),
+          ('depth/image', '/camera/camera/aligned_depth_to_color/image_raw/uncompressed'), # <--- Listening to our local unzip node
           ('odom', '/mavros/local_position/odom')
     ] 
-    
-    
 
     return LaunchDescription([
-
-        DeclareLaunchArgument(
-            'database_path', 
-            default_value='~/.ros/rtabmap.db',
-            description='Where to save the map database'),
-
-        DeclareLaunchArgument(
-            'use_sim_time', 
-            default_value='false',
-            description='Use simulation time? Set to true for bag playback.'),
-
-        DeclareLaunchArgument(
-            'subscribe_odom_info', 
-            default_value='true',
-            description='Subscribe to odom_info? Set to false if not in bag.'),
         
-        DeclareLaunchArgument(
-            'args', 
-            default_value='',
-            description='Extra arguments set to rtabmap nodes (e.g. --delete_db_on_start).'),
+        DeclareLaunchArgument('database_path', default_value='~/.ros/rtabmap.db'),
+        DeclareLaunchArgument('use_sim_time', default_value='true'),
+        DeclareLaunchArgument('subscribe_odom_info', default_value='true'),
+        DeclareLaunchArgument('args', default_value=''),
 
-        # --- 5. LAUNCH NODES ---
+        # ---------------------------------------------------------
+        # DECOMPRESSOR 1: RGB (Reads Bag -> Publishes Raw)
+        # ---------------------------------------------------------
+        Node(
+            package='image_transport',
+            executable='republish',
+            name='rgb_decompressor',
+            output='screen',
+            # REMOVED arguments=['compressed', 'raw'] (It was ignored)
+            # ADDED specific parameters to FORCE the mode:
+            parameters=[{
+                'use_sim_time': use_sim_time,
+                'in_transport': 'compressed',
+                'out_transport': 'raw'
+            }],
+            remappings=[
+                ('in/compressed', '/camera/camera/color/image_raw/compressed'),
+                ('out', '/camera/camera/color/image_raw/uncompressed')
+            ]
+        ),
+
+        # ---------------------------------------------------------
+        # DECOMPRESSOR 2: DEPTH (Reads Bag -> Publishes Raw)
+        # ---------------------------------------------------------
+        Node(
+            package='image_transport',
+            executable='republish',
+            name='depth_decompressor',
+            output='screen',
+            # Force 'compressedDepth' mode here:
+            parameters=[{
+                'use_sim_time': use_sim_time,
+                'in_transport': 'compressedDepth',
+                'out_transport': 'raw'
+            }],
+            remappings=[
+                ('in/compressedDepth', '/camera/camera/aligned_depth_to_color/image_raw/compressedDepth'),
+                ('out', '/camera/camera/aligned_depth_to_color/image_raw/uncompressed')
+            ]
+        ),
+
+        # ---------------------------------------------------------
+        # MAIN NODE: RTAB-MAP
+        # ---------------------------------------------------------
         Node(
             package='rtabmap_slam', executable='rtabmap', output='screen',
             parameters=parameters,
             remappings=remappings,
-            # '-d' deletes the previous database so you don't merge old maps
             arguments=['-d', args] 
         ),
 
+        # ---------------------------------------------------------
+        # VISUALIZER
+        # ---------------------------------------------------------
         Node(
             package='rtabmap_viz', executable='rtabmap_viz', output='screen',
             parameters=parameters,
