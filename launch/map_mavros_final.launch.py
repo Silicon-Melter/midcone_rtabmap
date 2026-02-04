@@ -13,7 +13,6 @@ def generate_launch_description():
     args = LaunchConfiguration('args')
 
     # --- RTAB-MAP PARAMETERS ---
-    # We REMOVE 'rgb_image_transport' because we are feeding it raw data now.
     parameters=[{
           'frame_id': 'base_link', 
           'subscribe_depth': True,
